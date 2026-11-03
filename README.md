@@ -106,15 +106,27 @@ The application compares normalized registration numbers. The current implementa
 
 ### Vehicle Image Examples
 
-![Vehicle Example 1](assets/car-number-plate-1.webp)
+## Application Output Screenshots
 
-![Vehicle Example 2](assets/car-number-plate-2.png)
+The following screenshots demonstrate the application's Gemini-based number plate extraction and CSV watchlist matching results.
 
-![Vehicle Example 3](assets/car-number-plate-3.png)
+### 1. Watchlist Match – TS10EL9988
 
-![Vehicle Example 4](assets/car-number-plate-4.png)
+![TS10EL9988 Watchlist Match](output/output-ts10el9988.png)
 
-![Vehicle Example 5](assets/car-number-plate-5.png)
+### 2. Watchlist Match – KA01MJ4521
+
+![KA01MJ4521 Watchlist Match](output/output-ka01mj4521.png)
+
+### 3. Watchlist Match – MH12AB1234
+
+![MH12AB1234 Watchlist Match](output/output-mh12ab1234.png)
+
+### 4. Watchlist Match – KA64N0099
+
+![KA64N0099 Watchlist Match](output/output-ka64n0099.png)
+
+*Note: These are demonstration results using test images and a configured CSV watchlist. A match does not establish suspicious activity and requires manual verification.*
 
 ## Important Notes
 
