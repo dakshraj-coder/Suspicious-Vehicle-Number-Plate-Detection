@@ -1,7 +1,8 @@
-
 import os
+import csv
 import time
 import tkinter as tk
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 from tkinter import filedialog, messagebox
 
 from PIL import Image, ImageTk
@@ -27,27 +28,60 @@ if not api_key:
 client = genai.Client(api_key=api_key)
 
 # Confirm this model ID is available to your API key.
-MODEL_NAME = "gemini-3.5-flash"
+MODEL_NAME = "gemini-3.6-flash"
 
 
 # ==========================================
 # 2. VEHICLE WATCHLIST
 # ==========================================
 
-watchlist = [
-    "KA 64 N 0099",
-    "TS10EL9988",
-    "KA01MJ4521",
-]
+WATCHLIST_FILE = os.path.join(
+    BASE_DIR,
+    "vehicle_watchlist.csv"
+)
 
 
 def normalize_plate(plate):
-    """Remove spaces and punctuation for comparison."""
+    """Remove spaces and punctuation and convert to uppercase."""
+
     return "".join(
         character
         for character in plate.upper()
         if character.isalnum()
     )
+
+
+def load_watchlist():
+    """Load and normalize vehicle numbers from CSV."""
+
+    watchlist = set()
+
+    if not os.path.exists(WATCHLIST_FILE):
+        raise FileNotFoundError(
+            f"Watchlist file not found: {WATCHLIST_FILE}"
+        )
+
+    with open(
+        WATCHLIST_FILE,
+        "r",
+        newline="",
+        encoding="utf-8"
+    ) as file:
+
+        reader = csv.DictReader(file)
+
+        if not reader.fieldnames or "vehicle_number" not in reader.fieldnames:
+            raise ValueError(
+                "CSV must contain a vehicle_number column."
+            )
+
+        for row in reader:
+            plate = row.get("vehicle_number", "").strip()
+
+            if plate:
+                watchlist.add(normalize_plate(plate))
+
+    return watchlist
 
 
 # ==========================================
@@ -161,10 +195,26 @@ class PlateApp:
             """
 
             # One API call: the SDK handles certain transient retries.
-            response = client.models.generate_content(
-                model=MODEL_NAME,
-                contents=[prompt, image_for_ai],
-            )
+            # Retry Gemini request if service is temporarily unavailable
+            
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    response = client.models.generate_content(
+                        model=MODEL_NAME,
+                        contents=[prompt, image_for_ai],
+                        )
+                    break
+                
+                except errors.APIError as error:
+                    if error.code == 503 and attempt < max_retries - 1:
+                        wait_time = 2 ** (attempt + 1)
+                        print(
+                            f"Gemini unavailable. Retrying in {wait_time} seconds..."
+                        )
+                        time.sleep(wait_time)
+            else:
+                raise
 
             plate_text = (response.text or "").strip()
             cleaned_plate = plate_text.strip("\"'").upper()
@@ -185,7 +235,7 @@ class PlateApp:
 
             normalized_watchlist = {
                 normalize_plate(plate)
-                for plate in watchlist
+                for plate in load_watchlist()
             }
 
             # ==================================
